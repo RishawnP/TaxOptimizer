@@ -1,5 +1,13 @@
 # Alberta Income Tax Tools (FastAPI)
 
+Overview
+
+This application helps users estimate their personal income tax in Alberta and understand when it makes sense to claim RRSP deductions. It provides an easy-to-use web interface where users can input their income and deduction details to see estimated federal and provincial tax, take-home income, and marginal tax rates.
+
+The RRSP optimizer is useful for people whose income changes from year to year and want to explore whether claiming RRSP deductions now, later, or partially can lead to better after-tax outcomes. The tool compares different strategies and presents the results visually and in a downloadable PDF summary.
+
+This project is intended for students, early-career professionals, and anyone interested in learning how Canadian income tax and RRSP deductions work. It is designed for educational and planning insight only and does not provide tax or financial advice.
+
 Web-based tools (FastAPI + Jinja2) to estimate 2024 Federal + Alberta personal income tax and explore RRSP deduction timing strategies.
 
 This is an educational tool only and not tax or financial advice.
