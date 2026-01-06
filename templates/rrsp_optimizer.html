@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Alberta Tax Tools - RRSP Optimizer</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0 16px 32px;
+            background: #f6f8fa;
+        }
+        header {
+            padding: 16px 0;
+        }
+        nav a {
+            margin-right: 12px;
+            text-decoration: none;
+            color: #0366d6;
+        }
+        nav a.active {
+            font-weight: 600;
+        }
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 24px;
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid #d0d7de;
+        }
+        button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            background: #0366d6;
+            color: white;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+        button:hover {
+            background: #0350a6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            text-align: left;
+            padding: 6px 8px;
+            border-bottom: 1px solid #d0d7de;
+        }
+        .disclaimer {
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: #57606a;
+        }
+        #chart-container {
+            margin-top: 24px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/tax-estimator">Tax estimator</a>
+        <a href="/rrsp-optimizer" class="active">RRSP deduction optimizer</a>
+    </nav>
+</header>
+<main>
+    <h1>RRSP deduction strategy optimizer</h1>
+    <p>
+        Compare three strategies for using an RRSP deduction over this year and next year:
+    </p>
+    <ul>
+        <li><strong>Save the deduction</strong> and claim it all next year</li>
+        <li><strong>Claim it fully now</strong> and invest the tax refund</li>
+        <li><strong>Claim a partial amount now</strong> and the rest next year</li>
+    </ul>
+    <p>
+        The algorithm searches for the split that maximizes your wealth at the <strong>end of next year</strong>,
+        assuming you invest any tax savings at your expected annual return.
+    </p>
+
+    <h2>Inputs</h2>
+    <form method="get" action="/rrsp-optimizer">
+        <div class="grid">
+            <div>
+                <label for="current_income">Current year taxable income (CAD)</label>
+                <input type="number" id="current_income" name="current_income" min="0" step="0.01"
+                       value="{{ current_income }}">
+            </div>
+            <div>
+                <label for="next_income">Next year expected taxable income (CAD)</label>
+                <input type="number" id="next_income" name="next_income" min="0" step="0.01"
+                       value="{{ next_income }}">
+            </div>
+            <div>
+                <label for="rrsp_amount">RRSP deduction amount to allocate (CAD)</label>
+                <input type="number" id="rrsp_amount" name="rrsp_amount" min="0" step="0.01"
+                       value="{{ rrsp_amount }}">
+            </div>
+            <div>
+                <label for="expected_return_percent">Expected annual investment return (%)</label>
+                <input type="number" id="expected_return_percent" name="expected_return_percent" min="0" max="30"
+                       step="0.1" value="{{ expected_return_percent }}">
+            </div>
+        </div>
+        <button type="submit">Recalculate</button>
+    </form>
+
+    {% if not has_valid_inputs %}
+        <p class="disclaimer">
+            Enter positive values for both years' income and the RRSP deduction amount to see the strategy comparison.
+        </p>
+    {% else %}
+        <h2>Strategy comparison</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Strategy</th>
+                <th>Deduct this year</th>
+                <th>Deduct next year</th>
+                <th>Tax savings this year</th>
+                <th>Tax savings next year</th>
+                <th>Value at end of next year</th>
+                <th>Advantage vs saving deduction</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for row in rows %}
+                <tr>
+                    <td>{{ row.name }}</td>
+                    <td>{{ row.deduct_now }}</td>
+                    <td>{{ row.deduct_next }}</td>
+                    <td>{{ row.savings_year0 }}</td>
+                    <td>{{ row.savings_year1 }}</td>
+                    <td>{{ row.end_value }}</td>
+                    <td>{{ row.advantage }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <div id="chart-container">
+            <h2>Advantage vs deduction timing</h2>
+            <canvas id="advantageChart" height="120"></canvas>
+        </div>
+
+        <script>
+            const xValues = {{ x_values_json | safe }};
+            const yValues = {{ y_values_json | safe }};
+
+            if (xValues.length > 0) {
+                const ctx = document.getElementById('advantageChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: xValues,
+                        datasets: [{
+                            label: 'Advantage vs saving deduction ($)',
+                            data: yValues,
+                            borderColor: '#0366d6',
+                            backgroundColor: 'rgba(3, 102, 214, 0.1)',
+                            tension: 0.25,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (context) {
+                                        const value = context.parsed.y || 0;
+                                        return 'Advantage: $' + value.toFixed(2);
+                                    },
+                                },
+                            },
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Deduct this year (CAD)',
+                                },
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Advantage vs saving deduction ($)',
+                                },
+                            },
+                        },
+                    },
+                });
+            }
+        </script>
+
+        {% if best %}
+            <h2>Recommended allocation</h2>
+            <p>
+                Based on your inputs, the allocation that maximizes your wealth at the end of next year is to
+                deduct <strong>${{ "{:,.2f}".format(best.deduct_now) }} this year</strong> and
+                <strong>${{ "{:,.2f}".format(best.deduct_next) }} next year</strong>.
+            </p>
+            <p>
+                You can also
+                <a href="/rrsp-optimizer/report.pdf?current_income={{ current_income }}&amp;next_income={{ next_income }}&amp;rrsp_amount={{ rrsp_amount }}&amp;expected_return_percent={{ expected_return_percent }}">
+                    download a PDF summary
+                </a>
+                of this strategy.
+            </p>
+        {% endif %}
+    {% endif %}
+
+    <p class="disclaimer">
+        This comparison only looks at the timing of the RRSP deduction over two years, assumes tax rules stay the same,
+        and ignores RRSP withdrawal taxes and contribution limits. Real outcomes can differ and this is not financial
+        advice.
+    </p>
+</main>
+</body>
+</html>
+

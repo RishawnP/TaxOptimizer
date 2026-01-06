@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Alberta Tax Tools - Tax Estimator</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            margin: 0;
+            padding: 0 16px 32px;
+            background: #f6f8fa;
+        }
+        header {
+            padding: 16px 0;
+        }
+        nav a {
+            margin-right: 12px;
+            text-decoration: none;
+            color: #0366d6;
+        }
+        nav a.active {
+            font-weight: 600;
+        }
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 24px;
+        }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid #d0d7de;
+        }
+        button {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            background: #0366d6;
+            color: white;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+        button:hover {
+            background: #0350a6;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        th, td {
+            text-align: left;
+            padding: 6px 8px;
+            border-bottom: 1px solid #d0d7de;
+        }
+        .disclaimer {
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: #57606a;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <nav>
+        <a href="/tax-estimator" class="active">Tax estimator</a>
+        <a href="/rrsp-optimizer">RRSP deduction optimizer</a>
+    </nav>
+</header>
+<main>
+    <h1>Alberta income tax estimator (2024)</h1>
+    <p>
+        Estimate your Canadian <strong>federal + Alberta</strong> personal income tax based on your income and simple
+        deductions.
+        This is an educational tool only and not tax advice.
+    </p>
+
+    <h2>Inputs</h2>
+    <form method="get" action="/tax-estimator">
+        <div class="grid">
+            <div>
+                <label for="employment_income">Employment income (T4, CAD)</label>
+                <input type="number" id="employment_income" name="employment_income" min="0" step="0.01"
+                       value="{{ employment_income }}">
+            </div>
+            <div>
+                <label for="other_income">Other taxable income (CAD)</label>
+                <input type="number" id="other_income" name="other_income" min="0" step="0.01"
+                       value="{{ other_income }}">
+            </div>
+            <div>
+                <label for="rrsp">RRSP contributions (deductible, CAD)</label>
+                <input type="number" id="rrsp" name="rrsp" min="0" step="0.01"
+                       value="{{ rrsp }}">
+            </div>
+            <div>
+                <label for="other_deductions">Other deductions (CAD)</label>
+                <input type="number" id="other_deductions" name="other_deductions" min="0" step="0.01"
+                       value="{{ other_deductions }}">
+            </div>
+        </div>
+        <button type="submit">Calculate</button>
+    </form>
+
+    <h2>Results</h2>
+    <p><strong>Gross income:</strong> ${{ "{:,.2f}".format(gross_income) }}</p>
+    <p><strong>Total deductions:</strong> ${{ "{:,.2f}".format(total_deductions) }}</p>
+
+    <table>
+        <tbody>
+        <tr>
+            <th>Taxable income (after deductions)</th>
+            <td>${{ "{:,.2f}".format(breakdown.taxable_income) }}</td>
+        </tr>
+        <tr>
+            <th>Federal income tax</th>
+            <td>${{ "{:,.2f}".format(breakdown.federal_tax) }}</td>
+        </tr>
+        <tr>
+            <th>Alberta income tax</th>
+            <td>${{ "{:,.2f}".format(breakdown.alberta_tax) }}</td>
+        </tr>
+        <tr>
+            <th>Total income tax</th>
+            <td>${{ "{:,.2f}".format(breakdown.total_tax) }}</td>
+        </tr>
+        <tr>
+            <th>Net income after tax (before RRSP/deductions)</th>
+            <td>${{ "{:,.2f}".format(breakdown.net_after_tax) }}</td>
+        </tr>
+        <tr>
+            <th>Net cash after tax and deductions</th>
+            <td>${{ "{:,.2f}".format(net_after_tax_and_deductions) }}</td>
+        </tr>
+        <tr>
+            <th>Average tax rate</th>
+            <td>{{ "{:.2f}".format(breakdown.average_rate_percent) }}%</td>
+        </tr>
+        <tr>
+            <th>Combined marginal tax rate</th>
+            <td>{{ "{:.2f}".format(breakdown.combined_marginal_rate_percent) }}%</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p class="disclaimer">
+        Assumes an Alberta resident for all of 2024, only basic federal and provincial personal amounts, and no
+        credits or income types beyond what you enter here. Real tax returns may differ significantly.
+    </p>
+</main>
+</body>
+</html>
+
